@@ -1,0 +1,32 @@
+version: '3.9'
+services:
+  webserver:
+    build: ./webserver
+    ports:
+      - "8000:5000"
+    volumes:
+      - ./webserver:/webserver
+    environment:
+      FLASK_ENV: development
+  db:
+    image: mongo:latest
+    hostname: datastore
+    environment:
+      - MONGO_INITDB_DATABASE=chat_db
+    ports:
+      - "27017:27017"
+  websocket:
+    build: ./websocket
+    command: tail -f /dev/null
+    container_name: chat_app_websocket
+    ports:
+      - "5200:5200"
+    volumes:
+      - ./websocket:/websocket
+  client:
+    build: ./client
+    command: tail -f /dev/null
+    container_name: chat_app_client
+    volumes:
+      - ./client:/client
+    
