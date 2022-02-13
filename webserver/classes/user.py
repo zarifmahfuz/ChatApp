@@ -24,7 +24,10 @@ class User(object):
         }
 
     def user_exists(self, userId: str) -> bool:
-        result = users_collection.find({"_id": userId})
+        """
+            Returns True if a user with the given userId exists, False otherwise.
+        """
+        result = users_collection.find_one({"_id": userId})
         return result != None
 
     def add_user(self, data: dict, bcrypt: Bcrypt):

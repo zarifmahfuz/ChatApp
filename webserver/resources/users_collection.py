@@ -1,6 +1,5 @@
 from flask_restful import Resource
 from flask import request
-from webserver.database_manager import users_collection
 from webserver.app import bcrypt
 from webserver.classes.user import User
 import jsonschema
