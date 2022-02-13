@@ -1,121 +1,34 @@
 import socket
 import threading
 import time
-from datetime import datetime
-from itertools import cycle
 import sys
-
+from chat_queue import ChatQueue
+from message_handler import MessageHandler
 from utils import get_date_repr
-from database_manager import messages_collection
+from room_manager import RoomManager
 
-def mesg_index(old, last, new, max_index):
+
+def send_all(sd: socket.socket, last_read: int, room_id: str) -> int:
     """
-    Reference: http://faculty.salina.k-state.edu/tim/NPstudy_guide/servers/Project5_chat_Server.html#project5-chat-server
-    :param old: integer index of oldest (first) message in queue
-    :param last: integer index of last message read by the client thread
-    :param new: integer index of newest (last) message in the queue
-
-    This computes the index value of the message queue from where the reader
-    should return messages.  It accounts for having a cyclic counter.
-    This code is a little tricky because it has to catch all possible
-    combinations.
+        Sends the latest messages in a given room to a client socket.
     """
-    if new >= old:
-        # normal case
-        if last >= old and last < new:
-            return (last - old + 1)
-        else:
-            return 0
-    else:
-        # cyclic roll over (new < old)
-        if last >= old:
-            return (last - old + 1)
-        elif last < new:
-            return (max_index - old + last)
-        else:
-            return 0
-
-
-class ChatMessage(object):
-    """
-        Object that holds the chat message.
-    """
-    def __init__(self, msg_idx: int, timestamp: datetime, data: str):
-        self.msg_idx = msg_idx
-        self.timestamp = timestamp
-        self.data = data
-
-class ChatQueue(object):
-    """
-        Maintains a queue of chat messages and exposes read and write operations to the queue.
-    """
-    def __init__(self, room: str, max_len: int, max_index: int = 100):
-        self.cyclic_count = cycle(range(max_index))
-        self.current_idx = -1
-        self.max_idx = max_index
-        self.room = room
-        self.messages = []
-        self.max_len = max_len
-        self.read_cnt = 0
-        self.write_mtx = threading.Lock()
-        self.read_cnt_mtx = threading.Lock()
-
-
-    def reader(self, last_read: int) -> list:
-        # only one thread is allowed to change the read count at a time
-        self.read_cnt_mtx.acquire()
-        self.read_cnt += 1
-        if (self.read_cnt == 1):
-            # if this is the first reader, make sure that no writer is writing to the queue
-            self.write_mtx.acquire()
-        self.read_cnt_mtx.release()
-
-        # perform read
-        if (last_read == self.current_idx):
-            response = None
-        else:
-            idx_to_read_from = mesg_index(self.messages[0].msg_idx, last_read, self.current_idx, self.max_idx)
-            response = self.messages[idx_to_read_from:]
-
-        self.read_cnt_mtx.acquire()
-        self.read_cnt -= 1
-        if (self.read_cnt == 0):
-            # if this is the last reader, release the write mutex so that writer is able to write now
-            self.write_mtx.release()
-        self.read_cnt_mtx.release()
-
-        return response
-
-    def writer(self, data: str):
-        # no other readers allowed to read and no other writers allowed to write
-        # enter critical section~!
-        self.write_mtx.acquire()
-        self.current_idx = next(self.cyclic_count)
-        self.messages.append(ChatMessage(self.current_idx, datetime.utcnow(), data))
-        if (len(self.messages) > self.max_len):
-            del self.messages[0]
-        # leave critical section~!
-        self.write_mtx.release()
-
-
-
-def send_all(sd: socket.socket, last_read: int) -> int:
-    reading = chat_queue.reader(last_read)
+    reading = chat_rooms[room_id].reader(last_read)
     if reading is None:
         return last_read
     for chat_message in reading:
         last_idx = chat_message.msg_idx
-        timestamp = chat_message.timestamp
-        msg = chat_message.data
-        send_msg = get_date_repr(timestamp) + ", " + msg
+        send_msg = chat_message.gata_data_for_pres()
         print(f'DEBUG: send_msg = {send_msg}')
         sd.send(bytes(send_msg, "utf-8"))
     return last_idx
 
 
-def client_exit(client_socket: socket.socket, peer: str):
-    msg = peer + " disconnected\r\n"
-    chat_queue.writer(msg)
+def client_exit(user_id: str, room_id: str):
+    """
+        Sends a message to the writer when a client disconnects to notify other users in the room.
+    """
+    msg = "disconnected\r\n"
+    chat_rooms[room_id].writer({"content": msg, "sender": user_id})
 
 
 def handle_client(client_socket: socket.socket):
@@ -172,10 +85,10 @@ def handle_client(client_socket: socket.socket):
 
          
     last_read = -1
-    msg = f'{user_id} has connected!\r\n'
-    chat_queue.writer(msg)
+    msg = "has connected!\r\n"
+    chat_rooms[room_id].writer({"content": msg, "sender": user_id})
     while True:
-        last_read = send_all(client_socket, last_read)
+        last_read = send_all(client_socket, last_read, room_id)
         try:
             data = client_socket.recv(MAX_BUF)
         except socket.timeout:
@@ -186,17 +99,16 @@ def handle_client(client_socket: socket.socket):
             return
         except:
             # some other error
-            client_exit(client_socket, user_id)
+            client_exit(user_id, room_id)
             break
         
         if not len(data):
             # size of data is zero => client has disconnected
-            client_exit(client_socket, user_id)
+            client_exit(user_id, room_id)
             break
 
-        msg = f'{user_id}: '
-        msg += data.decode("utf-8") + "\r\n"
-        chat_queue.writer(msg)
+        msg = data.decode("utf-8") + "\r\n"
+        chat_rooms[room_id].writer({"content": msg, "sender": user_id})
     
     # thread is about to exit - close client socket
     client_socket.close()
@@ -236,7 +148,17 @@ if (__name__ == "__main__"):
         sys.exit(1)
 
     host = socket.gethostbyname("websocket")
-    print(f'host address: {host}')
+    print(f'Websocker server started running at address: {host}')
     MAX_BUF = 4096
-    chat_queue = ChatQueue(1, 10, 100)
+    max_chat_queue = 10
+
+    # start the server with 4 chat rooms
+    room_manager = RoomManager()
+    room_ids = ["Room 1", "Room 2", "Room 3", "Room 4"]
+    chat_rooms = {}
+    message_handler = MessageHandler()
+    for room_id in room_ids:
+        id = room_manager.create_room(room_id)
+        chat_rooms[id] = ChatQueue(id, max_chat_queue, message_handler)
+
     main(host, port)
