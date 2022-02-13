@@ -19,7 +19,6 @@ class Rooms(Resource):
                 status code 404: either the given room_id is invalid OR the user_id is invalid
         """
         try:
-            print(f'Received ROOM ID: {room_id}')
             participant = request.args.get("participant", default=None, type=str)
             if participant is None:
                 return {"response": "participant parameter was not given in the request URL"}, 400

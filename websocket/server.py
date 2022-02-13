@@ -109,7 +109,7 @@ def send_all(sd: socket.socket, last_read: int) -> int:
         msg = chat_message.data
         send_msg = get_date_repr(timestamp) + ", " + msg
         print(f'DEBUG: send_msg = {send_msg}')
-        sd.send(bytes(send_msg, "utf8"))
+        sd.send(bytes(send_msg, "utf-8"))
     return last_idx
 
 
@@ -122,9 +122,57 @@ def handle_client(client_socket: socket.socket):
     """
         Client thread callback. Serves a client.
     """
-    peer = client_socket.getpeername()
+    class HandshakeProtocol:
+        """
+            Serves needs some metadata from the client before progressing further. This class defines a protocol
+            of information exchange when a client first connects to the server.
+        """
+        AskForUserId, AwaitUserId, AskForRoomId, AwaitRoomId, Done = range(0, 5)
+    hp_state = HandshakeProtocol.AskForUserId
+    user_id = ""
+    room_id = ""
+    while True:
+        if (hp_state == HandshakeProtocol.AskForUserId):
+            client_socket.send(bytes("U", "utf-8"))
+            hp_state = HandshakeProtocol.AwaitUserId
+            print("Last State: AskForUserId")
+
+        elif (hp_state == HandshakeProtocol.AwaitUserId):
+            try:
+                data_received = client_socket.recv(MAX_BUF)
+                user_id = data_received.decode("utf-8")
+                if (len(user_id) > 0):
+                    hp_state = HandshakeProtocol.AskForRoomId
+                print("Last State: AwaitUserId")
+            except (socket.timeout):
+                continue
+
+        elif (hp_state == HandshakeProtocol.AskForRoomId):
+            client_socket.send(bytes("R", "utf-8"))
+            hp_state = HandshakeProtocol.AwaitRoomId
+            print("Last State: AskForRoomId")
+
+        elif (hp_state == HandshakeProtocol.AwaitRoomId):
+            try:
+                data_received = client_socket.recv(MAX_BUF)
+                room_id = data_received.decode("utf-8")
+                if (len(room_id) > 0):
+                    hp_state = HandshakeProtocol.Done
+                print("Last State: AwaitRoomId")
+            except socket.timeout:
+                continue
+
+        elif (hp_state == HandshakeProtocol.Done):
+            print(f'Handshake Protocol Complete. user_id={user_id}, room_id={room_id}')
+            client_socket.send(bytes("ACK", "utf-8"))
+            break
+
+        else:
+            hp_state = HandshakeProtocol.AskForUserId
+
+         
     last_read = -1
-    msg = "%s:%s has connected!\r\n" % peer
+    msg = f'{user_id} has connected!\r\n'
     chat_queue.writer(msg)
     while True:
         last_read = send_all(client_socket, last_read)
@@ -138,14 +186,15 @@ def handle_client(client_socket: socket.socket):
             return
         except:
             # some other error
-            client_exit(client_socket, str(peer))
+            client_exit(client_socket, user_id)
             break
         
         if not len(data):
             # size of data is zero => client has disconnected
-            client_exit(client_socket, str(peer))
+            client_exit(client_socket, user_id)
             break
-        msg = "Message from %s:%s: " % peer
+
+        msg = f'{user_id}: '
         msg += data.decode("utf-8") + "\r\n"
         chat_queue.writer(msg)
     
