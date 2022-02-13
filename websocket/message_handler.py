@@ -11,12 +11,13 @@ class ChatMessage(object):
     """
         Object that holds the chat message.
     """
-    def __init__(self, msg_idx: int, timestamp: datetime, content: str, sender: str, room_id: str):
+    def __init__(self, msg_idx: int, timestamp: datetime, content: str, sender: str, room_id: str, written_to_db = False):
         self.msg_idx = msg_idx
         self.timestamp = timestamp
         self.content = content
         self.sender = sender
         self.room_id = room_id
+        self.written_to_db = written_to_db      # message is not written to db when it is first created
 
     def get_data_for_db(self):
         """
@@ -32,7 +33,8 @@ class ChatMessage(object):
 
     def __str__(self):
         ret = "{\n\t" + "timestamp: " + get_date_repr(self.timestamp) + ",\n\t" + "content: " + self.content + ",\n\t"\
-            + "sender: " + self.sender + ",\n\t" + "room_id: " + self.room_id + "\r\n}"
+            + "sender: " + self.sender + ",\n\t" + "room_id: " + self.room_id + ",\n\t" + "written_to_db: " \
+            + str(self.written_to_db) + "\r\n}"
         return ret
 
 
@@ -52,15 +54,21 @@ class MessageHandler(object):
             # assuming that the list contains ChatMessage objects
             req = []
             for chat_message in data:
-                req.append(chat_message.get_data_for_db())
+                if (chat_message.written_to_db is False):
+                    req.append(chat_message.get_data_for_db())
+                    chat_message.written_to_db = True
+            
+            if (not len(req)):
+                return
+
             result = messages_collection.insert_many(req).inserted_ids
-            print(f'# message write requests: {len(data)}')
+            print(f'# message write requests: {len(req)}')
             print(f'# actual writes = {len(result)}')
         elif (isinstance(data, ChatMessage)):
-            data = data.get_data_for_db()
-            result = messages_collection.insert_one(data)
-        else:
-            print("Invalid data given to write_to_db")
+            if (data.written_to_db is False):
+                data = data.get_data_for_db()
+                result = messages_collection.insert_one(data)
+                data.written_to_db = True
 
     def get_most_recent_messages(self, room_id: str, count: int, cyclic_count: cycle):
         """
@@ -86,7 +94,8 @@ class MessageHandler(object):
         chat_messages = []
         i = 0
         for doc in result_cursor:
-            chat_message = ChatMessage(next(cyclic_count), doc["timestamp"], doc["content"], doc["sender"], doc["room_id"])
+            chat_message = ChatMessage(next(cyclic_count), doc["timestamp"], doc["content"], doc["sender"],
+                                       doc["room_id"], True)
             chat_messages.append(chat_message)
             i += 1
         return chat_messages
@@ -105,7 +114,7 @@ if __name__ == "__main__":
     # post the data
     # message_handler.write_to_db(data)
 
-    messages = message_handler.get_most_recent_messages("Room 1", 10)
+    messages = message_handler.get_most_recent_messages("Room 4", 10, cycle(range(0, 100)))
     for m in messages:
         print(m)
     # messages_collection.delete_many({})

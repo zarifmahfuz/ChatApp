@@ -27,6 +27,7 @@ class ChatQueue(object):
         # print(f'current_idx: {self.current_idx}')
 
         self.read_cnt = 0
+        self.write_cnt = 0
         self.write_mtx = threading.Lock()
         self.read_cnt_mtx = threading.Lock()
 
@@ -60,13 +61,29 @@ class ChatQueue(object):
         # no other readers allowed to read and no other writers allowed to write
         # enter critical section~!
         self.write_mtx.acquire()
+
+        # bulk insert messages to the database if the chat queue has completed one full cycle of its length
+        if (self.write_cnt >= self.max_len):
+            self.message_handler.write_to_db(self.messages)
+            self.write_cnt = 0
+
         self.current_idx = next(self.cyclic_count)
         self.messages.append(ChatMessage(self.current_idx, datetime.utcnow(), data["content"], data["sender"], self.room_id))
+        self.write_cnt += 1
+
         if (len(self.messages) > self.max_len):
             del self.messages[0]
         # leave critical section~!
         self.write_mtx.release()
 
+
+"""
+db_write_cnt = 0
+if db_write_cnt >= max_len:
+    perform bulk write with everything in the list.
+    db_write_cnt = 0
+
+"""
 
 if __name__ == "__main__":
     # test code

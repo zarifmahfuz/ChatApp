@@ -131,9 +131,14 @@ def main(host: str, port: int):
             client_socket.settimeout(1)
             
         except KeyboardInterrupt:
+            print("Exiting...")
             server_socket.close()
             for cs in client_sockets:
                 cs.close()
+
+            # ensure that all unwritten messages are written to the database before exiting
+            for room_id in chat_rooms:
+                message_handler.write_to_db(chat_rooms[room_id].messages)
             break
 
         client_sockets.append(client_socket)
