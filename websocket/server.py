@@ -33,7 +33,7 @@ def client_exit(user_id: str, room_id: str):
 
 def handle_client(client_socket: socket.socket):
     """
-        Client thread callback. Serves a client.
+        Client thread callback. Each child thread is dedicated to a single client.
     """
     class HandshakeProtocol:
         """
@@ -118,6 +118,7 @@ def main(host: str, port: int):
     """
         Parent thread. Listens for new connections and starts a child thread to serve each new connection.
     """
+    # specifies the number of unaccepted connections that the system will allow before refusing new connections
     max_pending_connections = 10
     server_socket = socket.socket()
     server_socket.bind((host, port))
@@ -158,6 +159,7 @@ if (__name__ == "__main__"):
     max_chat_queue = 10
 
     # start the server with 4 chat rooms
+    # store the queues in a hashmap
     room_manager = RoomManager()
     room_ids = ["Room 1", "Room 2", "Room 3", "Room 4"]
     chat_rooms = {}

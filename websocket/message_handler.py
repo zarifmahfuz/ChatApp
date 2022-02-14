@@ -70,7 +70,7 @@ class MessageHandler(object):
                 result = messages_collection.insert_one(data)
                 data.written_to_db = True
 
-    def get_most_recent_messages(self, room_id: str, count: int, cyclic_count: cycle):
+    def get_most_recent_messages(self, room_id: str, count: int, cyclic_count: cycle) -> list:
         """
             Gets the most recent messages in a particular chat room.
         """

@@ -77,14 +77,6 @@ class ChatQueue(object):
         self.write_mtx.release()
 
 
-"""
-db_write_cnt = 0
-if db_write_cnt >= max_len:
-    perform bulk write with everything in the list.
-    db_write_cnt = 0
-
-"""
-
 if __name__ == "__main__":
     # test code
     message_handler = MessageHandler()
