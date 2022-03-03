@@ -62,6 +62,10 @@ The following diagram shows a high-level architecture of the application compone
 
 I built this application to be scalable. So, my implementation of the websocket and webserver can be scaled up and distributed across several nodes.
 
+## Class Diagram
+
+If you want to look at a more lower level details, check out my [objected-oriented design](https://github.com/zarifmahfuz/ChatApp/blob/main/docs/design/oop.jpg) of the application.
+
 ## References
 
 This project wouldn't be possible without these valuable information resources.
