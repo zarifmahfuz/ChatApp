@@ -57,7 +57,7 @@ The following diagram shows a high-level architecture of the application compone
 
 - When a client starts the application, it talks to the web service to authenticate user credentials, join new rooms or view older messages. The webserver exposes REST APIs to the client to allow this to happen.
 - When the client requests to join a chat room, it talks to the websocket server. The websocket server executes a handshake protocol to identify the client. Upon identification, the websocket server lets the client into the requested chat room by launching a dedicated thread for the client.
-- The websocket server has a dedicated thread for each client, performing socket I/O. This allows the websocket server to achieve concurrency by interleaving I/O operations with CPU operations.
+- The websocket server has a dedicated thread for each client, performing socket I/O. This allows the websocket server to achieve concurrency by interleaving I/O bound operations with CPU bound operations.
 - The websocket server broadcasts the chat room's messages in real-time to all the clients present in the chat room.
 - The websocket server also stores all chat messages into the database.
 
