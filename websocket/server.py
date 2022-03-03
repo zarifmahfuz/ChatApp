@@ -17,7 +17,7 @@ def send_all(sd: socket.socket, last_read: int, room_id: str) -> int:
         return last_read
     for chat_message in reading:
         last_idx = chat_message.msg_idx
-        send_msg = chat_message.gata_data_for_pres()
+        send_msg = chat_message.get_data_for_pres()
         print(f'DEBUG: send_msg = {send_msg}')
         sd.send(bytes(send_msg, "utf-8"))
     return last_idx

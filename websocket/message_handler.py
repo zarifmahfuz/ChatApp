@@ -25,7 +25,7 @@ class ChatMessage(object):
         """
         return {"timestamp": self.timestamp, "sender": self.sender, "content": self.content, "room_id": self.room_id}
 
-    def gata_data_for_pres(self) -> str:
+    def get_data_for_pres(self) -> str:
         """
             Returns a string representation of a chat message.
         """

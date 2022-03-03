@@ -46,6 +46,7 @@ class ChatQueue(object):
             response = None
         else:
             idx_to_read_from = mesg_index(self.messages[0].msg_idx, last_read, self.current_idx, self.max_idx)
+            # print(f'IDX TO READ FROM: {idx_to_read_from}')
             response = self.messages[idx_to_read_from:]
 
         self.read_cnt_mtx.acquire()

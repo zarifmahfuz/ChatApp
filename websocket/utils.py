@@ -24,6 +24,7 @@ def mesg_index(old, last, new, max_index):
     This code is a little tricky because it has to catch all possible
     combinations.
     """
+    # print(f'old={old}, new={new}, last={last}, max={max_index}')
     if new >= old:
         # normal case
         if last >= old and last < new:

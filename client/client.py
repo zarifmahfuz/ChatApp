@@ -83,6 +83,7 @@ def start_chat(user_id: str, room_id: str):
     print("Child thread ended")
     return
 
+
 def cli_after_login(user_id: str):
     class FSM2:
         """
