@@ -1,6 +1,7 @@
 # ChatApp
-This is a socket-based multi-threaded chat application.
-![](https://github.com/zarifmahfuz/ChatApp/blob/main/docs/demo1.gif)
+This is a socket-based multi-threaded chat application. 
+
+<img src="https://github.com/zarifmahfuz/ChatApp/blob/main/docs/demo1.gif" width="1000" height="500" />
 
 
 # Build
