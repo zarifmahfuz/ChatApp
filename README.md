@@ -18,7 +18,23 @@ Ensure that your docker engine is running. From the top level directory of this 
 docker-compose up -d
 ```
 
-This command will build the images of all the application services and it will launch all the services.
+This command will build the images of all the application services and it will launch all the services. Once you have your containers running, you want to start the server and client applications. 
+
+To start the server, login to the server container as follows and run the server program.
+
+```
+docker exec -it chat_app_websocket /bin/sh
+python3 server.py 5200
+```
+
+After this, login to the client container and start the client program(s).
+
+```
+docker exec -it chat_app_client /bin/sh
+python3 client.py 5200
+```
+
+You can launch as many client programs as you want as this is a multi-party chat application.
 
 To stop the application and delete all the containers:
 ```
@@ -29,3 +45,18 @@ To temporarily stop the application, but keep the containers and their associate
 ```
 docker-compose stop
 ```
+
+
+# Design
+
+## Architecture
+
+The following diagram shows a high-level architecture of the application components.
+
+<img src="https://github.com/zarifmahfuz/ChatApp/blob/main/docs/design/infra.jpg" width="405" height="370" />
+
+- When a client starts the application, it talks to the web service to authenticate user credentials, join new rooms or view older messages. The webserver exposes REST APIs to the client to allow this to happen.
+- When the client requests to join a chat room, it talks to the websocket server. The websocket server executes a handshake protocol to identify the client. Upon identification, the websocket server lets the client into the requested chat room by launching a dedicated thread for the client.
+- The websocket server has a dedicate thread for each client, performing socket i/o.
+- The websocket server also stores all chat messages into the database.
+
