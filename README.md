@@ -60,3 +60,11 @@ The following diagram shows a high-level architecture of the application compone
 - The websocket server has a dedicate thread for each client, performing socket i/o.
 - The websocket server also stores all chat messages into the database.
 
+I built this application to be scalable. So, my implementation of the websocket and webserver can be scaled up and distributed across several nodes.
+
+## References
+
+This project wouldn't be possible without these valuable information resources.
+1. https://towardsdatascience.com/ace-the-system-interview-design-a-chat-application-3f34fd5b85d0
+2. http://faculty.salina.k-state.edu/tim/NPstudy_guide/servers/chat_background.html
+
