@@ -1,5 +1,7 @@
 # ChatApp
-Simple multiparty chat application based on websockets
+This is a socket-based multi-threaded chat application.
+![](https://github.com/zarifmahfuz/ChatApp/blob/main/docs/demo1.gif)
+
 
 # Build
 
